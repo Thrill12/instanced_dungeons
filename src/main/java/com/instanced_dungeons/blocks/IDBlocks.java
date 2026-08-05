@@ -3,7 +3,6 @@ package com.instanced_dungeons.blocks;
 import com.instanced_dungeons.InstancedDungeonsMod;
 import com.instanced_dungeons.items.IDItems;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -16,8 +15,8 @@ public final class IDBlocks {
         public static final DeferredRegister.Blocks BLOCKS =
                         DeferredRegister.createBlocks(InstancedDungeonsMod.MODID);
 
-        public static final DeferredBlock<Block> DUNGEON_BLOCK =
-                        BLOCKS.registerBlock("dungeon_block", registryName -> new Block(
+        public static final DeferredBlock<DungeonBlock> DUNGEON_BLOCK =
+                        BLOCKS.registerBlock("dungeon_block", registryName -> new DungeonBlock(
                                         BlockBehaviour.Properties.of().destroyTime(1.5f)));
 
         public static final DeferredItem<BlockItem> DUNGEON_BLOCK_ITEM =
