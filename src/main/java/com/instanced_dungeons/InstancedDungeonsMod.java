@@ -1,9 +1,16 @@
 package com.instanced_dungeons;
 
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
+import com.instanced_dungeons.blocks.IDBlockStateProvider;
 import com.instanced_dungeons.blocks.IDBlocks;
 import com.instanced_dungeons.items.IDItems;
+import com.instanced_dungeons.items.loot.IDLootProvider;
 import com.mojang.logging.LogUtils;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.data.DataGenerator;
+import net.minecraft.data.DataProvider.Factory;
+import net.minecraft.data.PackOutput;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -11,7 +18,10 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.common.data.ExistingFileHelper;
+import net.neoforged.neoforge.data.event.GatherDataEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
 @Mod(InstancedDungeonsMod.MODID)
@@ -22,6 +32,7 @@ public class InstancedDungeonsMod {
     public InstancedDungeonsMod(IEventBus modEventBus, ModContainer modContainer) {
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
+        modEventBus.addListener(this::gatherData);
 
         IDBlocks.BLOCKS.register(modEventBus);
         IDItems.ITEMS.register(modEventBus);
@@ -42,10 +53,25 @@ public class InstancedDungeonsMod {
 
     }
 
-    // You can use SubscribeEvent and let the Event Bus discover methods to call
+    // Neoforge event bus
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
         LOGGER.info("Initializing Instanced Dungeons...");
+    }
+
+    public void gatherData(GatherDataEvent event) {
+        DataGenerator generator = event.getGenerator();
+        PackOutput output = generator.getPackOutput();
+        ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
+        CompletableFuture<HolderLookup.Provider> lookupProvider = event.getLookupProvider();
+
+        // other providers here
+        generator.addProvider(event.includeClient(),
+                new IDBlockStateProvider(output, existingFileHelper));
+
+        generator.addProvider(event.includeServer(),
+                (Factory<IDLootProvider>) lootOutput -> new IDLootProvider(lootOutput,
+                        lookupProvider));
     }
 }

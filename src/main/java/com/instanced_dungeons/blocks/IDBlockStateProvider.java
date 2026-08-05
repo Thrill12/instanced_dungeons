@@ -2,6 +2,7 @@ package com.instanced_dungeons.blocks;
 
 import com.instanced_dungeons.InstancedDungeonsMod;
 import net.minecraft.data.PackOutput;
+import net.minecraft.world.level.block.Block;
 import net.neoforged.neoforge.client.model.generators.BlockStateProvider;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 
@@ -13,6 +14,7 @@ public class IDBlockStateProvider extends BlockStateProvider {
     @Override
     protected void registerStatesAndModels() {
         // Register block states and models here
+        Block dungeonBlock = IDBlocks.DUNGEON_BLOCK.get();
+        simpleBlockWithItem(dungeonBlock, cubeAll(dungeonBlock));
     }
-
 }
