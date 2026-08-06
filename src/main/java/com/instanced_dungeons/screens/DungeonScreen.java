@@ -1,11 +1,17 @@
 package com.instanced_dungeons.screens;
 
+import org.slf4j.Logger;
 import com.daqem.uilib.client.gui.AbstractContainerScreen;
 import com.daqem.uilib.client.gui.background.GradientBackground;
 import com.daqem.uilib.client.gui.component.TextComponent;
+import com.daqem.uilib.client.gui.component.io.ButtonComponent;
+import com.daqem.uilib.client.gui.text.Text;
 import com.instanced_dungeons.Constants;
+import com.instanced_dungeons.dungeons.DungeonManager;
+import com.mojang.logging.LogUtils;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,6 +21,8 @@ public class DungeonScreen extends AbstractContainerScreen<DungeonMenu> {
     public DungeonScreen(DungeonMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
     }
+
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     @Override
     protected void init() {
@@ -28,8 +36,19 @@ public class DungeonScreen extends AbstractContainerScreen<DungeonMenu> {
 
         Font font = this.minecraft.font;
         TextComponent hello = new TextComponent(this.leftPos + 8, this.topPos + 6,
-                new com.daqem.uilib.client.gui.text.Text(font, Component.literal("Dungeon")));
+                new Text(font, Component.literal("Dungeon")));
         this.addComponent(hello);
+
+        ButtonComponent button = new ButtonComponent(this.leftPos, this.topPos, 80, 25,
+                Component.literal("Start dungeon"));
+
+        button.setOnClickEvent((ButtonComponent clickedObject, Screen screen, double mouseX,
+                double mouseY, int buttonID) -> {
+            DungeonManager.getInstance().StartDungeon(1);
+            LOGGER.info("Started dungeon from button event");
+            return true;
+        });
+        this.addComponent(button);
     }
 
     @Override

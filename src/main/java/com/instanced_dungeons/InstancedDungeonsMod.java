@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import com.instanced_dungeons.blocks.IDBlockStateProvider;
 import com.instanced_dungeons.blocks.IDBlocks;
+import com.instanced_dungeons.dungeons.DungeonManager;
 import com.instanced_dungeons.items.IDItems;
 import com.instanced_dungeons.items.loot.IDLootProvider;
 import com.instanced_dungeons.screens.DungeonScreen;
@@ -31,6 +32,7 @@ import net.neoforged.neoforge.event.server.ServerStartingEvent;
 public class InstancedDungeonsMod {
     public static final String MODID = "instanced_dungeons";
     public static final Logger LOGGER = LogUtils.getLogger();
+    public static final DungeonManager DUNGEON_MANAGER = new DungeonManager();
 
     public InstancedDungeonsMod(IEventBus modEventBus, ModContainer modContainer) {
         // Register the commonSetup method for modloading
@@ -41,6 +43,8 @@ public class InstancedDungeonsMod {
         IDItems.ITEMS.register(modEventBus);
         IDItems.CREATIVE_MODE_TABS.register(modEventBus);
         IDMenus.MENUS.register(modEventBus);
+
+        DUNGEON_MANAGER.LoadDungeons();
 
         modEventBus.addListener((RegisterMenuScreensEvent event) -> {
             event.register(IDMenus.DUNGEON_MENU.get(), DungeonScreen::new);
