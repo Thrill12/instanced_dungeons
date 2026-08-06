@@ -1,8 +1,11 @@
 package com.instanced_dungeons.blocks;
 
+import com.instanced_dungeons.screens.DungeonMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.SimpleContainer;
+import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -18,7 +21,9 @@ public class DungeonBlock extends Block {
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
             Player player, BlockHitResult hit) {
         if (!level.isClientSide) {
-            player.sendSystemMessage(Component.literal("Right clicked the Dungeon Block!"));
+            player.openMenu(new SimpleMenuProvider((containerId, inventory,
+                    p) -> new DungeonMenu(containerId, inventory, new SimpleContainer(1)),
+                    Component.literal("Dungeon")));
         }
         return InteractionResult.SUCCESS;
     }

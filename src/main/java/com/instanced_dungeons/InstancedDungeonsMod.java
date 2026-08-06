@@ -6,6 +6,8 @@ import com.instanced_dungeons.blocks.IDBlockStateProvider;
 import com.instanced_dungeons.blocks.IDBlocks;
 import com.instanced_dungeons.items.IDItems;
 import com.instanced_dungeons.items.loot.IDLootProvider;
+import com.instanced_dungeons.screens.DungeonScreen;
+import com.instanced_dungeons.screens.IDMenus;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.DataGenerator;
@@ -17,6 +19,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
@@ -37,6 +40,11 @@ public class InstancedDungeonsMod {
         IDBlocks.BLOCKS.register(modEventBus);
         IDItems.ITEMS.register(modEventBus);
         IDItems.CREATIVE_MODE_TABS.register(modEventBus);
+        IDMenus.MENUS.register(modEventBus);
+
+        modEventBus.addListener((RegisterMenuScreensEvent event) -> {
+            event.register(IDMenus.DUNGEON_MENU.get(), DungeonScreen::new);
+        });
 
         // Register ourselves for server and other game events we are interested in.
         // Note that this is necessary if and only if we want *this* class (ExampleMod) to respond
