@@ -7,7 +7,7 @@ import com.daqem.uilib.client.gui.component.TextComponent;
 import com.daqem.uilib.client.gui.component.io.ButtonComponent;
 import com.daqem.uilib.client.gui.text.Text;
 import com.instanced_dungeons.Constants;
-import com.instanced_dungeons.dungeons.DungeonManager;
+import com.instanced_dungeons.networking.TeleportRequestPayload;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,10 +16,15 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 public class DungeonScreen extends AbstractContainerScreen<DungeonMenu> {
+
+    Inventory playerInventory;
+
     public DungeonScreen(DungeonMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
+        this.playerInventory = playerInventory;
     }
 
     public static final Logger LOGGER = LogUtils.getLogger();
@@ -44,11 +49,15 @@ public class DungeonScreen extends AbstractContainerScreen<DungeonMenu> {
 
         button.setOnClickEvent((ButtonComponent clickedObject, Screen screen, double mouseX,
                 double mouseY, int buttonID) -> {
-            DungeonManager.getInstance().StartDungeon(1);
+            // DungeonManager.getInstance().StartDungeon(1, playerInventory.player.level(),
+            // playerInventory.player);
+            PacketDistributor.sendToServer(
+                    new TeleportRequestPayload(playerInventory.player.getStringUUID()));
             LOGGER.info("Started dungeon from button event");
             return true;
         });
         this.addComponent(button);
+
     }
 
     @Override

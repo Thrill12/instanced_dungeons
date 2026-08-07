@@ -7,6 +7,7 @@ import com.instanced_dungeons.blocks.IDBlocks;
 import com.instanced_dungeons.dungeons.DungeonManager;
 import com.instanced_dungeons.items.IDItems;
 import com.instanced_dungeons.items.loot.IDLootProvider;
+import com.instanced_dungeons.networking.PayloadHandler;
 import com.instanced_dungeons.screens.DungeonScreen;
 import com.instanced_dungeons.screens.IDMenus;
 import com.mojang.logging.LogUtils;
@@ -14,6 +15,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider.Factory;
 import net.minecraft.data.PackOutput;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -34,10 +36,14 @@ public class InstancedDungeonsMod {
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final DungeonManager DUNGEON_MANAGER = new DungeonManager();
 
+    public static final ResourceLocation INSTANCED_DIMENSION_ID =
+            ResourceLocation.fromNamespaceAndPath("instanced_dungeons", "instanced_dungeon");
+
     public InstancedDungeonsMod(IEventBus modEventBus, ModContainer modContainer) {
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::gatherData);
+        modEventBus.addListener(PayloadHandler::register);
 
         IDBlocks.BLOCKS.register(modEventBus);
         IDItems.ITEMS.register(modEventBus);
