@@ -39,7 +39,6 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 public class InstancedDungeonsMod {
     public static final String MODID = "instanced_dungeons";
     public static final Logger LOGGER = LogUtils.getLogger();
-    public static final DungeonManager DUNGEON_MANAGER = new DungeonManager();
 
     public static final ResourceLocation INSTANCED_DIMENSION_ID =
             ResourceLocation.fromNamespaceAndPath("instanced_dungeons", "instanced_dungeon");
@@ -55,7 +54,7 @@ public class InstancedDungeonsMod {
         IDItems.CREATIVE_MODE_TABS.register(modEventBus);
         IDMenus.MENUS.register(modEventBus);
 
-        DUNGEON_MANAGER.loadDungeons();
+        DungeonManager.getInstance().loadDungeons();
 
         modEventBus.addListener((RegisterMenuScreensEvent event) -> {
             event.register(IDMenus.DUNGEON_MENU.get(), DungeonScreen::new);
@@ -85,7 +84,7 @@ public class InstancedDungeonsMod {
 
     @SubscribeEvent
     public void onServerStarted(ServerStartedEvent event) {
-        DUNGEON_MANAGER.init();
+        DungeonManager.getInstance().init();
     }
 
     @SubscribeEvent
@@ -95,9 +94,12 @@ public class InstancedDungeonsMod {
 
             // DungeonInstance dimension =
             DungeonInstance instance = DungeonManager.getInstance().getDungeonInstance(player);
+            LOGGER.info("Number of dungeon instances active is {} ",
+                    DungeonManager.getInstance().LIVE_DUNGEONS.size());
             if (instance == null) {
                 LOGGER.warn("Dungeon instance could not be found from player");
             }
+
             DungeonManager.getInstance().stopDungeon(instance);
         }
     }

@@ -49,7 +49,7 @@ public class DungeonManager {
     public DungeonInstance getDungeonInstance(Player player) {
         for (DungeonInstance instance : LIVE_DUNGEONS) {
             for (DungeonPlayerData data : instance.playerData) {
-                if (data.player == player.getUUID()) {
+                if (data.player.equals(player.getUUID())) {
                     return instance;
                 }
             }
@@ -80,6 +80,7 @@ public class DungeonManager {
 
     // Loads DUNGEON INSTANCES from previous server runtime
     public void init() {
+        LIVE_DUNGEONS.clear();
         // TODO: Improve this so that it detects all dimensions
         ServerLevel instancedDimension =
                 ServerLifecycleHooks.getCurrentServer().getLevel(InstancedDimension.ID_WORLD_KEY);
@@ -98,6 +99,8 @@ public class DungeonManager {
             return;
         }
 
+        LOGGER.info("Loading dungeon from disk...");
+
         DungeonInstance dungeonInstance = new DungeonInstance();
         for (Dungeon dungeon : DUNGEONS) {
 
@@ -113,7 +116,7 @@ public class DungeonManager {
         for (SerializedDungeonPlayerData playerData : dataInstance.playerData) {
             BlockPos playerEntryPosition = playerData.dungeonEntryPosition;
             ServerLevel playerEntryLevel = level.getServer().getLevel(playerData.dungeonEntryLevel);
-
+            LOGGER.info("Loading player with ID {} from disk.", playerData.playerID);
             newPlayerData.add(new DungeonPlayerData(playerData.playerID, playerEntryLevel,
                     playerEntryPosition));
         }
@@ -122,10 +125,15 @@ public class DungeonManager {
         dungeonInstance.boundingBox = dataInstance.boundingBox;
         dungeonInstance.level = dataInstance.level;
         LIVE_DUNGEONS.add(dungeonInstance);
-
     }
 
     public void startDungeon(int level, Level world, Player player) {
+        LOGGER.info("startDungeon called. Current LIVE_DUNGEONS size: {}", LIVE_DUNGEONS.size());
+        for (DungeonInstance existing : LIVE_DUNGEONS) {
+            LOGGER.info("  existing instance dimension={} identity={}",
+                    existing.dimension.dimension().location(), System.identityHashCode(existing));
+        }
+
         int index = (int) (Math.random() * DUNGEONS.size());
         Dungeon randomDungeon = DUNGEONS.get(index);
 
@@ -134,16 +142,24 @@ public class DungeonManager {
         ServerLevel instancedDimension =
                 world.getServer().getLevel(InstancedDimension.ID_WORLD_KEY);
 
+        ServerLevel playerDimension = player.getServer().getLevel(player.level().dimension());
+        BlockPos playerEntryPosition = new BlockPos((int) player.position().x(),
+                (int) player.position().y(), (int) player.position().z());
+
+        if (getDungeonInstance(instancedDimension) != null) {
+            DungeonInstance existingInstance = getDungeonInstance(instancedDimension);
+            LOGGER.info("getDungeonInstance returned: {}", existingInstance);
+            existingInstance.playerData.add(
+                    new DungeonPlayerData(player.getUUID(), playerDimension, playerEntryPosition));
+            return;
+        }
+
         DungeonInstance instance = new DungeonInstance(randomDungeon, level, instancedDimension);
         LIVE_DUNGEONS.add(instance);
 
         spawnStructure(instancedDimension, instance);
         setWorldBorder(instancedDimension, instance);
 
-        ServerLevel playerDimension = player.getServer().getLevel(player.level().dimension());
-
-        BlockPos playerEntryPosition = new BlockPos((int) player.position().x(),
-                (int) player.position().y(), (int) player.position().z());
         instance.addPlayer(
                 new DungeonPlayerData(player.getUUID(), playerDimension, playerEntryPosition));
         player.teleportTo(instancedDimension, index, 70, index, null, level, index);
@@ -167,12 +183,17 @@ public class DungeonManager {
         DimensionDataStorage storage = instance.dimension.getDataStorage();
         DungeonSavedData data = storage.computeIfAbsent(
                 new Factory<>(DungeonSavedData::create, DungeonSavedData::load), "dungeonData");
+        LOGGER.info("Saved dungeon instance with player id {} ",
+                savedInstance.playerData.toString());
         data.dungeonData = savedInstance;
         data.setDirty();
+
+        LOGGER.info("Saved dungeon instance to dimension data.");
     }
 
     // Used for when server closes and all players need to exit all dungeons
     public void stopAllDungeons() {
+        LOGGER.info("Stopping all dungeons...");
         List<DungeonInstance> dungeonCopies = new ArrayList<DungeonInstance>(LIVE_DUNGEONS);
         for (DungeonInstance instance : dungeonCopies) {
             stopDungeon(instance);
@@ -181,6 +202,7 @@ public class DungeonManager {
 
     public void stopDungeon(DungeonInstance instance) {
         for (DungeonPlayerData playerData : instance.playerData) {
+            LOGGER.info("Fetching player {} ", playerData.player);
             Player player =
                     instance.dimension.getServer().getPlayerList().getPlayer(playerData.player);
 
@@ -197,7 +219,7 @@ public class DungeonManager {
         clearDimension(instance.dimension, instance.boundingBox);
         clearDungeonSaveData(instance.dimension);
         LIVE_DUNGEONS.remove(instance);
-        LOGGER.info("Stopping dungeon instance");
+        LOGGER.info("Stopped dungeon instance.");
     }
 
     private void clearDungeonSaveData(ServerLevel dimension) {
