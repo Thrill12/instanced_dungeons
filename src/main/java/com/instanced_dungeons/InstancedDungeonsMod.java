@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import com.instanced_dungeons.blocks.IDBlockStateProvider;
 import com.instanced_dungeons.blocks.IDBlocks;
+import com.instanced_dungeons.dungeons.DungeonInstance;
 import com.instanced_dungeons.dungeons.DungeonManager;
 import com.instanced_dungeons.items.IDItems;
 import com.instanced_dungeons.items.loot.IDLootProvider;
@@ -16,6 +17,7 @@ import net.minecraft.data.DataGenerator;
 import net.minecraft.data.DataProvider.Factory;
 import net.minecraft.data.PackOutput;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -26,7 +28,10 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.common.data.ExistingFileHelper;
 import net.neoforged.neoforge.data.event.GatherDataEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 
 
 // The value here should match an entry in the META-INF/neoforge.mods.toml file
@@ -50,7 +55,7 @@ public class InstancedDungeonsMod {
         IDItems.CREATIVE_MODE_TABS.register(modEventBus);
         IDMenus.MENUS.register(modEventBus);
 
-        DUNGEON_MANAGER.LoadDungeons();
+        DUNGEON_MANAGER.loadDungeons();
 
         modEventBus.addListener((RegisterMenuScreensEvent event) -> {
             event.register(IDMenus.DUNGEON_MENU.get(), DungeonScreen::new);
@@ -76,6 +81,30 @@ public class InstancedDungeonsMod {
     public void onServerStarting(ServerStartingEvent event) {
         // Do something when the server starts
         LOGGER.info("Initializing Instanced Dungeons...");
+    }
+
+    @SubscribeEvent
+    public void onServerStarted(ServerStartedEvent event) {
+        DUNGEON_MANAGER.init();
+    }
+
+    @SubscribeEvent
+    public void onLivingDeath(LivingDeathEvent event) {
+        if (event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+
+            // DungeonInstance dimension =
+            DungeonInstance instance = DungeonManager.getInstance().getDungeonInstance(player);
+            if (instance == null) {
+                LOGGER.warn("Dungeon instance could not be found from player");
+            }
+            DungeonManager.getInstance().stopDungeon(instance);
+        }
+    }
+
+    @SubscribeEvent
+    public void onServerClose(ServerStoppingEvent event) {
+        // DungeonManager.getInstance().stopAllDungeons();
     }
 
     public void gatherData(GatherDataEvent event) {
