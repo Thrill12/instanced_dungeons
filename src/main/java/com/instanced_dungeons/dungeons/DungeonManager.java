@@ -12,7 +12,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.border.WorldBorder;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -35,6 +34,15 @@ public class DungeonManager {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public List<DungeonInstance> LIVE_DUNGEONS = new ArrayList<DungeonInstance>();
+
+    private static final int BARRIER_MARGIN = 5;
+
+    private BoundingBox getContainmentBounds(BoundingBox structureBox) {
+        return new BoundingBox(structureBox.minX() - BARRIER_MARGIN,
+                structureBox.minY() - BARRIER_MARGIN, structureBox.minZ() - BARRIER_MARGIN,
+                structureBox.maxX() + BARRIER_MARGIN, structureBox.maxY() + BARRIER_MARGIN,
+                structureBox.maxZ() + BARRIER_MARGIN);
+    }
 
     public DungeonInstance getDungeonInstance(ServerLevel dimension) {
         for (DungeonInstance instance : LIVE_DUNGEONS) {
@@ -158,11 +166,13 @@ public class DungeonManager {
         LIVE_DUNGEONS.add(instance);
 
         spawnStructure(instancedDimension, instance);
-        setWorldBorder(instancedDimension, instance);
+        buildBarrierWalls(instancedDimension, instance.boundingBox);
 
         instance.addPlayer(
                 new DungeonPlayerData(player.getUUID(), playerDimension, playerEntryPosition));
-        player.teleportTo(instancedDimension, index, 70, index, null, level, index);
+        BlockPos center = instance.boundingBox.getCenter();
+        player.teleportTo(instancedDimension, center.getX(), center.getY(), center.getZ(), null,
+                level, index);
 
         saveDungeonInstance(instance);
     }
@@ -232,11 +242,12 @@ public class DungeonManager {
     }
 
     private void clearDimension(ServerLevel serverLevel, BoundingBox boundingBox) {
-        BlockPos pos1 = new BlockPos(boundingBox.minX(), boundingBox.minY(), boundingBox.minZ());
-        BlockPos pos2 = new BlockPos(boundingBox.maxX(), boundingBox.maxY(), boundingBox.maxZ());
+        BoundingBox withBarrier = getContainmentBounds(boundingBox);
+        BlockPos pos1 = new BlockPos(withBarrier.minX(), withBarrier.minY(), withBarrier.minZ());
+        BlockPos pos2 = new BlockPos(withBarrier.maxX(), withBarrier.maxY(), withBarrier.maxZ());
 
-        LOGGER.info("Clearing " + boundingBox.getXSpan() + " " + boundingBox.getYSpan() + " "
-                + boundingBox.getZSpan());
+        LOGGER.info("Clearing " + withBarrier.getXSpan() + " " + withBarrier.getYSpan() + " "
+                + withBarrier.getZSpan());
 
         BlockPos.betweenClosed(pos1, pos2).forEach((pos) -> {
             serverLevel.setBlock(pos, Blocks.AIR.defaultBlockState(), 0);
@@ -262,10 +273,21 @@ public class DungeonManager {
         }
     }
 
-    private void setWorldBorder(ServerLevel dimension, DungeonInstance instance) {
-        BoundingBox box = instance.boundingBox;
-        WorldBorder border = dimension.getWorldBorder();
-        border.setCenter(box.getCenter().getX(), box.getCenter().getZ());
-        border.setSize(Math.max(box.getXSpan(), box.getZSpan()));
+    private void buildBarrierWalls(ServerLevel serverLevel, BoundingBox structureBox) {
+        BoundingBox box = getContainmentBounds(structureBox);
+        BlockPos min = new BlockPos(box.minX(), box.minY(), box.minZ());
+        BlockPos max = new BlockPos(box.maxX(), box.maxY(), box.maxZ());
+
+        LOGGER.info("Building barrier shell around instance.");
+
+        BlockPos.betweenClosed(min, max).forEach(pos -> {
+            boolean isShell = pos.getX() == box.minX() || pos.getX() == box.maxX()
+                    || pos.getY() == box.minY() || pos.getY() == box.maxY()
+                    || pos.getZ() == box.minZ() || pos.getZ() == box.maxZ();
+
+            if (isShell) {
+                serverLevel.setBlock(pos, Blocks.BARRIER.defaultBlockState(), 0);
+            }
+        });
     }
 }
